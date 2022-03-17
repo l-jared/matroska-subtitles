@@ -14,10 +14,10 @@ export class SubtitleStream extends SubtitleParserBase {
       // may not be at ebml tag offset
       this.unstable = true
     }
+    this.on('data', this._ondata.bind(this))
   }
 
-  // passthrough stream: data is intercepted but not transformed
-  _transform (chunk, _, callback) {
+  _ondata (chunk) {
     if (this.unstable) {
       // the ebml decoder expects to see a tag, so we won't use it until we find a cluster
       for (let i = 0; i < chunk.length - 12; i++) {
@@ -37,8 +37,6 @@ export class SubtitleStream extends SubtitleParserBase {
     } else {
       this.decoderWrite(chunk)
     }
-
-    callback(null, chunk)
   }
 
   decoderWrite (chunk) {

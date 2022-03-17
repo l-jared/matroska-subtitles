@@ -1,4 +1,4 @@
-import { Transform } from 'readable-stream'
+import { PassThrough } from 'readable-stream'
 import { EbmlStreamDecoder, EbmlTagId } from 'ebml-stream'
 import { inflateSync } from 'zlib'
 
@@ -10,7 +10,7 @@ function getData (chunk, id) {
   return el ? el.data : undefined
 }
 
-export class SubtitleParserBase extends Transform {
+export class SubtitleParserBase extends PassThrough {
   constructor () {
     super()
 
