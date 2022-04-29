@@ -10,6 +10,26 @@ function getData (chunk, id) {
   return el ? el.data : undefined
 }
 
+function toTimeString (ms, ass, comma) {
+  var hh = Math.floor(ms / 1000 / 3600);
+  var mm = Math.floor((ms / 1000 / 60) % 60);
+  var ss = Math.floor((ms / 1000) % 60);
+  var ff = Math.floor(ass ? (ms % 1000) / 10 : (ms % 1000));
+  var time =
+    (ass ? hh : (hh < 10 ? '0' : '')) +
+    ':' +
+    (mm < 10 ? '0' : '') +
+    mm +
+    ':' +
+    (ss < 10 ? '0' : '') +
+    ss +
+    (comma ? ',' : '.') +
+    (ass ? '' : (ff < 100 ? '0' : '')) +
+    (ff < 10 ? '0' : '') +
+    ff;
+  return time;
+}
+
 export class SubtitleParserBase extends PassThrough {
   constructor () {
     super()
@@ -97,7 +117,8 @@ export class SubtitleParserBase extends PassThrough {
         const subtitle = {
           text: payload.toString('utf8'),
           time: (block.value + this._currentClusterTimecode) * this.timecodeScale,
-          duration: blockDuration * this.timecodeScale
+          duration: blockDuration * this.timecodeScale,
+          content: ''
         }
 
         if (SSA_TYPES.has(track.type)) {
@@ -109,7 +130,16 @@ export class SubtitleParserBase extends PassThrough {
             subtitle[SSA_KEYS[i]] = values[i]
           }
 
+          subtitle.content = subtitle.text.split(',')
+          subtitle.content = 'Dialogue: ' + (track.type === 'ssa' ? 'Marked=0' : subtitle.content[1]) + ',' + toTimeString(subtitle.time, true, false) + ',' + toTimeString(subtitle.time + subtitle.duration, true, false) + ',' + subtitle.content.slice(2).join(',')
+
           subtitle.text = values.slice(8).join(',')
+        } else if (track.type === 'utf8') {
+          subtitle.content = toTimeString(subtitle.time, false, true) + ' --> ' + toTimeString(subtitle.time + subtitle.duration, false, true) + '\r\n' + subtitle.text + '\r\n'
+        } else if (track.type === 'webvtt') {
+          subtitle.content = toTimeString(subtitle.time, false, false) + ' --> ' + toTimeString(subtitle.time + subtitle.duration, false, false) + '\r\n' + subtitle.text + '\r\n'
+        } else {
+          subtitle.content = subtitle.text
         }
 
         this.emit('subtitle', subtitle, block.track)
